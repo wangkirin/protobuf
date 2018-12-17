@@ -210,6 +210,9 @@ class MockErrorCollector : public DescriptorPool::ErrorCollector {
       case NAME:
         location_name = "NAME";
         break;
+      case JSON_NAME:
+        location_name = "JSON_NAME";
+        break;
       case NUMBER:
         location_name = "NUMBER";
         break;
@@ -254,6 +257,9 @@ class MockErrorCollector : public DescriptorPool::ErrorCollector {
     switch (location) {
       case NAME:
         location_name = "NAME";
+        break;
+      case JSON_NAME:
+        location_name = "JSON_NAME";
         break;
       case NUMBER:
         location_name = "NUMBER";
@@ -1142,7 +1148,7 @@ class StylizedFieldNamesTest : public testing::Test {
              FieldDescriptorProto::TYPE_INT32);
     AddField(message, "fooBaz", 3, FieldDescriptorProto::LABEL_OPTIONAL,
              FieldDescriptorProto::TYPE_INT32);
-    AddField(message, "fooFoo", 4,  // Camel-case conflict with foo_foo.
+    AddField(message, "fooFoo_x", 4,
              FieldDescriptorProto::LABEL_OPTIONAL,
              FieldDescriptorProto::TYPE_INT32);
     AddField(message, "foobar", 5,  // Lower-case conflict with FooBar.
@@ -1198,10 +1204,10 @@ class StylizedFieldNamesTest : public testing::Test {
 
 TEST_F(StylizedFieldNamesTest, LowercaseName) {
   EXPECT_EQ("foo_foo", message_->field(0)->lowercase_name());
-  EXPECT_EQ("foobar", message_->field(1)->lowercase_name());
-  EXPECT_EQ("foobaz", message_->field(2)->lowercase_name());
-  EXPECT_EQ("foofoo", message_->field(3)->lowercase_name());
-  EXPECT_EQ("foobar", message_->field(4)->lowercase_name());
+  EXPECT_EQ("foobar" , message_->field(1)->lowercase_name());
+  EXPECT_EQ("foobaz" , message_->field(2)->lowercase_name());
+  EXPECT_EQ("foofoo_x" , message_->field(3)->lowercase_name());
+  EXPECT_EQ("foobar" , message_->field(4)->lowercase_name());
 
   EXPECT_EQ("bar_foo", message_->extension(0)->lowercase_name());
   EXPECT_EQ("barbar", message_->extension(1)->lowercase_name());
@@ -1220,7 +1226,7 @@ TEST_F(StylizedFieldNamesTest, CamelcaseName) {
   EXPECT_EQ("fooFoo", message_->field(0)->camelcase_name());
   EXPECT_EQ("fooBar", message_->field(1)->camelcase_name());
   EXPECT_EQ("fooBaz", message_->field(2)->camelcase_name());
-  EXPECT_EQ("fooFoo", message_->field(3)->camelcase_name());
+  EXPECT_EQ("fooFooX", message_->field(3)->camelcase_name());
   EXPECT_EQ("foobar", message_->field(4)->camelcase_name());
 
   EXPECT_EQ("barFoo", message_->extension(0)->camelcase_name());
@@ -1280,10 +1286,11 @@ TEST_F(StylizedFieldNamesTest, FindByCamelcaseName) {
             message_->FindExtensionByCamelcaseName("barBar"));
   EXPECT_EQ(message_->extension(2),
             message_->FindExtensionByCamelcaseName("barBaz"));
-  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("bar_foo") == nullptr);
-  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("BarBar") == nullptr);
-  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("fooFoo") == nullptr);
-  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("nosuchfield") == nullptr);
+  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("bar_foo") == NULL);
+  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("BarBar") == NULL);
+  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("fooFoo") == NULL);
+  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("fooFooX") == NULL);
+  EXPECT_TRUE(message_->FindExtensionByCamelcaseName("nosuchfield") == NULL);
 
   EXPECT_EQ(file_->extension(0), file_->FindExtensionByCamelcaseName("bazFoo"));
   EXPECT_EQ(file_->extension(1), file_->FindExtensionByCamelcaseName("bazBar"));
@@ -6475,6 +6482,29 @@ TEST_F(ValidationErrorTest, ValidateProto3Extension) {
       "defining options.\n");
 }
 
+TEST_F(ValidationErrorTest, ValidateProtoJsonName) {
+  BuildFileWithErrors(
+    "name: 'foo.proto' "
+    "syntax: 'proto2' "
+    "message_type {"
+    "  name: 'Foo'"
+    "  field { name:'f1' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 json_name:'fooBar' }"
+    "  field { name:'f2' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 json_name:'fooBar' }"
+    "}",
+    "foo.proto: Foo: JSON_NAME: Fields \"f2\" and \"f1\" in \"Foo\" have the same JSON"
+    " name \"fooBar\".\n");
+  BuildFileWithErrors(
+    "name: 'foo.proto' "
+    "syntax: 'proto3' "
+    "message_type {"
+    "  name: 'Foo'"
+    "  field { name:'f1' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 json_name:'fooBar' }"
+    "  field { name:'f2' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 json_name:'fooBar' }"
+    "}",
+    "foo.proto: Foo: JSON_NAME: Fields \"f2\" and \"f1\" in \"Foo\" have the same JSON"
+    " name \"fooBar\".\n");
+}
+
 // Test that field names that may conflict in JSON is not allowed by protoc.
 TEST_F(ValidationErrorTest, ValidateProto3JsonName) {
   // The comparison is case-insensitive.
@@ -6486,7 +6516,7 @@ TEST_F(ValidationErrorTest, ValidateProto3JsonName) {
       "  field { name:'name' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "  field { name:'Name' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "}",
-      "foo.proto: Foo: NAME: The JSON camel-case name of field \"Name\" "
+      "foo.proto: Foo: JSON_NAME: The JSON camel-case name of field \"Name\" "
       "conflicts with field \"name\". This is not allowed in proto3.\n");
   // Underscores are ignored.
   BuildFileWithErrors(
@@ -6497,7 +6527,7 @@ TEST_F(ValidationErrorTest, ValidateProto3JsonName) {
       "  field { name:'ab' number:1 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "  field { name:'_a__b_' number:2 label:LABEL_OPTIONAL type:TYPE_INT32 }"
       "}",
-      "foo.proto: Foo: NAME: The JSON camel-case name of field \"_a__b_\" "
+      "foo.proto: Foo: JSON_NAME: The JSON camel-case name of field \"_a__b_\" "
       "conflicts with field \"ab\". This is not allowed in proto3.\n");
 }
 
