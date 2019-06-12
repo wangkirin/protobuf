@@ -327,6 +327,7 @@ bool MessageLite::ParsePartialFromString(const std::string& data) {
 }
 
 bool MessageLite::ParseFromArray(const void* data, int size) {
+  if (size < 0) return false;  // security: size is often user-supplied 
   return ParseFrom<kParse>(as_string_view(data, size));
 }
 

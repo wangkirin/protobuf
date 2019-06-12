@@ -386,6 +386,16 @@ TEST(MESSAGE_TEST_NAME, ParseFailsOnInvalidMessageEnd) {
   EXPECT_FALSE(message.ParseFromArray("\014", 1));
 }
 
+TEST(MESSAGE_TEST_NAME, ParseFailsOnInvalidBufferSize) {
+  UNITTEST::TestAllTypes message;
+
+  // The buffer size is a negative number.
+  EXPECT_FALSE(message.ParseFromArray("", -1));
+
+  // The buffer size is a very large number which over INT_MAX.
+  EXPECT_FALSE(message.ParseFromArray("", 2147483648));
+}
+
 // Regression test for b/23630858
 TEST(MESSAGE_TEST_NAME, MessageIsStillValidAfterParseFails) {
   UNITTEST::TestAllTypes message;
