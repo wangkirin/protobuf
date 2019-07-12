@@ -34,6 +34,8 @@
 
 #include <google/protobuf/compiler/cpp/cpp_message.h>
 
+#include <cstdlib>
+#include <iostream>
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -1383,7 +1385,11 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* printer) {
   // Import all nested message classes into this class's scope with typedefs.
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
     const Descriptor* nested_type = descriptor_->nested_type(i);
-    if (!IsMapEntryMessage(nested_type)) {
+    if(classname_ == nested_type->name()) {
+      std::cerr<<"\033[31m"<<"error"<<"\033[0m"<<": nested type name can not be the same as external message name."<<std::endl;
+      exit(1);
+    }
+    if (!IsMapEntryMessage(nested_type)) {  
       format.Set("nested_full_name", ClassName(nested_type, false));
       format.Set("nested_name", ResolveKeyword(nested_type->name()));
       format("typedef ${1$$nested_full_name$$}$ ${1$$nested_name$$}$;\n",
@@ -1398,6 +1404,11 @@ void MessageGenerator::GenerateClassDefinition(io::Printer* printer) {
   // Import all nested enums and their values into this class's scope with
   // typedefs and constants.
   for (int i = 0; i < descriptor_->enum_type_count(); i++) {
+    const EnumDescriptor* enum_type = descriptor_->enum_type(i);
+    if(classname_ == enum_type->name()) {
+      std::cerr<<"\033[31m"<<"error"<<"\033[0m"<<": nested enum type name can not be the same as external message name."<<std::endl;
+      exit(1);
+    } 
     enum_generators_[i]->GenerateSymbolImports(printer);
     format("\n");
   }
