@@ -88,6 +88,9 @@
 // I'd love to hear about other alternatives, though, as this code isn't
 // exactly pretty.
 
+#include <cstdlib>
+#include <cctype>
+
 #include <google/protobuf/io/tokenizer.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/logging.h>
@@ -1105,6 +1108,10 @@ void Tokenizer::ParseStringAppend(const std::string& text,
     } else if (*ptr == text[0] && ptr[1] == '\0') {
       // Ignore final quote matching the starting quote.
     } else {
+      if(isspace(*ptr)) {
+        std::cerr<<"Reserved names can not contain space."<<std::endl;
+        exit(1);
+      }
       output->push_back(*ptr);
     }
   }
