@@ -1121,9 +1121,12 @@ def _AddMergeFromStringMethod(message_descriptor, cls):
           'memoryview not supported in Python 2 with the pure Python proto '
           'implementation: this is to maintain compatibility with the C++ '
           'implementation')
-
+    if (serialized.isspace()):
+      raise TypeError('parameter of the ParseFromString() cannot be space')
     serialized = memoryview(serialized)
     length = len(serialized)
+    if (length==0):
+      raise TypeError('parameter of the ParseFromString() cannot be empty')
     try:
       if self._InternalParse(serialized, 0, length) != length:
         # The only reason _InternalParse would return early is if it
