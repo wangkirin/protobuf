@@ -1030,8 +1030,8 @@ class MakeDescriptorTest(unittest.TestCase):
   def testCamelcaseName(self):
     descriptor_proto = descriptor_pb2.DescriptorProto()
     descriptor_proto.name = 'Bar'
-    names = ['foo_foo', 'FooBar', 'fooBaz', 'fooFoo', 'foobar']
-    camelcase_names = ['fooFoo', 'fooBar', 'fooBaz', 'fooFoo', 'foobar']
+    names = ['foo_foo_x', 'FooBar', 'fooBaz', 'fooFoo', 'foobar']
+    camelcase_names = ['fooFooX', 'fooBar', 'fooBaz', 'fooFoo', 'foobar']
     for index in range(len(names)):
       field = descriptor_proto.field.add()
       field.number = index + 1
@@ -1044,10 +1044,10 @@ class MakeDescriptorTest(unittest.TestCase):
   def testJsonName(self):
     descriptor_proto = descriptor_pb2.DescriptorProto()
     descriptor_proto.name = 'TestJsonName'
-    names = ['field_name', 'fieldName', 'FieldName',
-             '_field_name', 'FIELD_NAME', 'json_name']
-    json_names = ['fieldName', 'fieldName', 'FieldName',
-                  'FieldName', 'FIELDNAME', '@type']
+    names = ['field_name_x', 'fieldName', 'FieldName',
+             '_field_name_x', 'FIELD_NAME', 'json_name']
+    json_names = ['fieldNameX', 'fieldName', 'FieldName',
+                  'FieldNameX', 'FIELDNAME', '@type']
     for index in range(len(names)):
       field = descriptor_proto.field.add()
       field.number = index + 1
